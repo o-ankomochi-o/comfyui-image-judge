@@ -1,0 +1,53 @@
+[project]
+name = "comfyui-image-judge"
+version = "0.0.1"
+description = "ComfyUI custom nodes for human OK/NG judging of generated images, oriented toward LoRA dataset curation."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "o-ankomochi-o" },
+]
+requires-python = ">=3.10"
+keywords = [
+    "comfyui",
+    "comfyui-nodes",
+    "image-curation",
+    "dataset",
+    "lora",
+    "kohya-ss",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "Pillow>=10.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/o-ankomochi-o/comfyui-image-judge"
+Repository = "https://github.com/o-ankomochi-o/comfyui-image-judge"
+Issues = "https://github.com/o-ankomochi-o/comfyui-image-judge/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+# ComfyUI Registry publication metadata.
+# Fill PublisherId after registering at https://registry.comfy.org/ (Step 10 of the roadmap).
+[tool.comfy]
+PublisherId = ""
+DisplayName = "Image Judge"
+Icon = ""

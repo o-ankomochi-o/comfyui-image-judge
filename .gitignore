@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+*.pyc
+.pytest_cache/
+
+# Virtual environments
+.venv
+
+# IDE
+.vscode/
+.idea/
+
+# CLAUDE
+CLAUDE.md
+
+# ComfyUI runtime output (judge dataset directory created by SaveForJudge during manual testing)
+/output/
