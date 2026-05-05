@@ -1,6 +1,12 @@
 from datetime import datetime
 
-from core import build_caption, build_metadata, ensure_pending_dir, make_stem
+from core import (
+    build_caption,
+    build_metadata,
+    ensure_pending_dir,
+    make_stem,
+    save_caption_file,
+)
 
 
 def test_build_caption_combines_trigger_and_caption():
@@ -52,3 +58,9 @@ def test_ensure_pending_dir_creates_nested_path(tmp_path):
     pending = ensure_pending_dir(tmp_path, "my_ds")
     assert pending == tmp_path / "judge" / "my_ds" / "pending"
     assert pending.is_dir()
+
+
+def test_save_caption_file_writes_utf8(tmp_path):
+    target = tmp_path / "out.txt"
+    save_caption_file(target, "trg, a cat 猫")
+    assert target.read_text(encoding="utf-8") == "trg, a cat 猫"
