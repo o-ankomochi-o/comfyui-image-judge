@@ -66,3 +66,31 @@ def build_pnginfo(prompt: dict | None, workflow: dict | None) -> PngInfo:
     if workflow is not None:
         info.add_text("workflow", json.dumps(workflow))
     return info
+
+
+def save_one(
+    base_dir: Path,
+    dataset_name: str,
+    image: np.ndarray,
+    caption: str,
+    trigger_word: str,
+    index: int,
+    timestamp: datetime,
+    prompt: dict | None = None,
+    workflow: dict | None = None,
+) -> str:
+    pending = ensure_pending_dir(base_dir, dataset_name)
+    stem = make_stem(timestamp, index)
+    full_caption = build_caption(trigger_word, caption)
+    metadata = build_metadata(
+        stem=stem,
+        dataset_name=dataset_name,
+        caption=full_caption,
+        trigger_word=trigger_word,
+        timestamp=timestamp,
+    )
+    pnginfo = build_pnginfo(prompt, workflow)
+    save_image_png(pending / f"{stem}.png", image, pnginfo=pnginfo)
+    save_caption_file(pending / f"{stem}.txt", full_caption)
+    save_metadata_file(pending / f"{stem}.json", metadata)
+    return stem
