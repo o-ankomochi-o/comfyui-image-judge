@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from core import build_caption, build_metadata, make_stem
+from core import build_caption, build_metadata, ensure_pending_dir, make_stem
 
 
 def test_build_caption_combines_trigger_and_caption():
@@ -46,3 +46,9 @@ def test_build_metadata_initialises_judgment_state():
     assert md["judgment"] == "pending"
     assert md["judged_at"] is None
     assert md["ng_reasons"] == []
+
+
+def test_ensure_pending_dir_creates_nested_path(tmp_path):
+    pending = ensure_pending_dir(tmp_path, "my_ds")
+    assert pending == tmp_path / "judge" / "my_ds" / "pending"
+    assert pending.is_dir()
