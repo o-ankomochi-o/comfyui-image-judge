@@ -10,6 +10,7 @@ from core import (
     build_pnginfo,
     ensure_pending_dir,
     make_stem,
+    save_batch,
     save_caption_file,
     save_image_png,
     save_metadata_file,
@@ -128,3 +129,26 @@ def test_save_one_writes_png_txt_json_trio(tmp_path):
     assert md["caption"] == "trg, a cat"
     assert md["trigger_word"] == "trg"
     assert md["judgment"] == "pending"
+
+
+def test_save_batch_iterates_indices_starting_at_one(tmp_path):
+    images = np.zeros((3, 4, 6, 3), dtype=np.uint8)
+    stems = save_batch(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        images=images,
+        caption="a cat",
+        trigger_word="trg",
+        timestamp=datetime(2026, 5, 5, 12, 34, 56),
+    )
+    assert stems == [
+        "20260505_123456_001",
+        "20260505_123456_002",
+        "20260505_123456_003",
+    ]
+    pending = tmp_path / "judge" / "my_ds" / "pending"
+    files = sorted(p.name for p in pending.iterdir())
+    expected = sorted(
+        f"{stem}.{ext}" for stem in stems for ext in ("json", "png", "txt")
+    )
+    assert files == expected
