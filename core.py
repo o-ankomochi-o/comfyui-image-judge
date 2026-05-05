@@ -2,6 +2,10 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
+from PIL import Image
+from PIL.PngImagePlugin import PngInfo
+
 
 def build_caption(trigger_word: str, caption: str) -> str:
     return ", ".join(part for part in (trigger_word, caption) if part)
@@ -45,3 +49,11 @@ def save_metadata_file(path: Path, metadata: dict) -> None:
         json.dumps(metadata, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+
+
+def save_image_png(
+    path: Path,
+    image: np.ndarray,
+    pnginfo: PngInfo | None = None,
+) -> None:
+    Image.fromarray(image, mode="RGB").save(Path(path), format="PNG", pnginfo=pnginfo)
