@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -37,3 +38,10 @@ def ensure_pending_dir(base_dir: Path, dataset_name: str) -> Path:
 
 def save_caption_file(path: Path, caption: str) -> None:
     Path(path).write_text(caption, encoding="utf-8")
+
+
+def save_metadata_file(path: Path, metadata: dict) -> None:
+    Path(path).write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
