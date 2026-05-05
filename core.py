@@ -94,3 +94,29 @@ def save_one(
     save_caption_file(pending / f"{stem}.txt", full_caption)
     save_metadata_file(pending / f"{stem}.json", metadata)
     return stem
+
+
+def save_batch(
+    base_dir: Path,
+    dataset_name: str,
+    images: np.ndarray,
+    caption: str,
+    trigger_word: str,
+    timestamp: datetime,
+    prompt: dict | None = None,
+    workflow: dict | None = None,
+) -> list[str]:
+    return [
+        save_one(
+            base_dir=base_dir,
+            dataset_name=dataset_name,
+            image=images[i],
+            caption=caption,
+            trigger_word=trigger_word,
+            index=i + 1,
+            timestamp=timestamp,
+            prompt=prompt,
+            workflow=workflow,
+        )
+        for i in range(len(images))
+    ]
