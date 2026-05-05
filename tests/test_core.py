@@ -13,6 +13,7 @@ from core import (
     save_caption_file,
     save_image_png,
     save_metadata_file,
+    save_one,
 )
 
 
@@ -102,3 +103,28 @@ def test_build_pnginfo_embeds_prompt_and_workflow(tmp_path):
     with Image.open(target) as loaded:
         assert json.loads(loaded.text["prompt"]) == {"a": 1}
         assert json.loads(loaded.text["workflow"]) == {"b": 2}
+
+
+def test_save_one_writes_png_txt_json_trio(tmp_path):
+    img = np.zeros((4, 6, 3), dtype=np.uint8)
+    stem = save_one(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        image=img,
+        caption="a cat",
+        trigger_word="trg",
+        index=1,
+        timestamp=datetime(2026, 5, 5, 12, 34, 56),
+        prompt={"a": 1},
+        workflow={"b": 2},
+    )
+    assert stem == "20260505_123456_001"
+    pending = tmp_path / "judge" / "my_ds" / "pending"
+    assert (pending / f"{stem}.png").is_file()
+    assert (pending / f"{stem}.txt").read_text(encoding="utf-8") == "trg, a cat"
+    md = json.loads((pending / f"{stem}.json").read_text(encoding="utf-8"))
+    assert md["stem"] == stem
+    assert md["dataset"] == "my_ds"
+    assert md["caption"] == "trg, a cat"
+    assert md["trigger_word"] == "trg"
+    assert md["judgment"] == "pending"
