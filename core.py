@@ -33,3 +33,7 @@ def ensure_pending_dir(base_dir: Path, dataset_name: str) -> Path:
     pending = Path(base_dir) / "judge" / dataset_name / "pending"
     pending.mkdir(parents=True, exist_ok=True)
     return pending
+
+
+def save_caption_file(path: Path, caption: str) -> None:
+    Path(path).write_text(caption, encoding="utf-8")
