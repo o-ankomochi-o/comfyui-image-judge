@@ -57,3 +57,12 @@ def save_image_png(
     pnginfo: PngInfo | None = None,
 ) -> None:
     Image.fromarray(image, mode="RGB").save(Path(path), format="PNG", pnginfo=pnginfo)
+
+
+def build_pnginfo(prompt: dict | None, workflow: dict | None) -> PngInfo:
+    info = PngInfo()
+    if prompt is not None:
+        info.add_text("prompt", json.dumps(prompt))
+    if workflow is not None:
+        info.add_text("workflow", json.dumps(workflow))
+    return info
