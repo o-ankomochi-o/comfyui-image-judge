@@ -22,4 +22,7 @@ def build_metadata(
         "caption": caption,
         "trigger_word": trigger_word,
         "timestamp": timestamp.isoformat(),
+        "judgment": "pending",
+        "judged_at": None,
+        "ng_reasons": [],
     }
