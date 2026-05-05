@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 
 
 def build_caption(trigger_word: str, caption: str) -> str:
@@ -26,3 +27,9 @@ def build_metadata(
         "judged_at": None,
         "ng_reasons": [],
     }
+
+
+def ensure_pending_dir(base_dir: Path, dataset_name: str) -> Path:
+    pending = Path(base_dir) / "judge" / dataset_name / "pending"
+    pending.mkdir(parents=True, exist_ok=True)
+    return pending
