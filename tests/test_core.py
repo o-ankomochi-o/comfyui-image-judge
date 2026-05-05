@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from core import (
@@ -6,6 +7,7 @@ from core import (
     ensure_pending_dir,
     make_stem,
     save_caption_file,
+    save_metadata_file,
 )
 
 
@@ -64,3 +66,16 @@ def test_save_caption_file_writes_utf8(tmp_path):
     target = tmp_path / "out.txt"
     save_caption_file(target, "trg, a cat 猫")
     assert target.read_text(encoding="utf-8") == "trg, a cat 猫"
+
+
+def test_save_metadata_file_roundtrips_via_json(tmp_path):
+    target = tmp_path / "out.json"
+    md = {
+        "stem": "x",
+        "judgment": "pending",
+        "judged_at": None,
+        "ng_reasons": [],
+        "caption": "trg, 猫",
+    }
+    save_metadata_file(target, md)
+    assert json.loads(target.read_text(encoding="utf-8")) == md
