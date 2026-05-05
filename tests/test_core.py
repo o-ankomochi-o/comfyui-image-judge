@@ -7,6 +7,7 @@ from PIL import Image
 from core import (
     build_caption,
     build_metadata,
+    build_pnginfo,
     ensure_pending_dir,
     make_stem,
     save_caption_file,
@@ -92,3 +93,12 @@ def test_save_image_png_writes_pil_loadable_png(tmp_path):
     with Image.open(target) as loaded:
         assert loaded.size == (6, 4)
         assert loaded.mode == "RGB"
+
+
+def test_build_pnginfo_embeds_prompt_and_workflow(tmp_path):
+    target = tmp_path / "out.png"
+    info = build_pnginfo(prompt={"a": 1}, workflow={"b": 2})
+    save_image_png(target, np.zeros((2, 2, 3), dtype=np.uint8), pnginfo=info)
+    with Image.open(target) as loaded:
+        assert json.loads(loaded.text["prompt"]) == {"a": 1}
+        assert json.loads(loaded.text["workflow"]) == {"b": 2}
