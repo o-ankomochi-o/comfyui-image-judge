@@ -1,12 +1,16 @@
 import json
 from datetime import datetime
 
+import numpy as np
+from PIL import Image
+
 from core import (
     build_caption,
     build_metadata,
     ensure_pending_dir,
     make_stem,
     save_caption_file,
+    save_image_png,
     save_metadata_file,
 )
 
@@ -79,3 +83,12 @@ def test_save_metadata_file_roundtrips_via_json(tmp_path):
     }
     save_metadata_file(target, md)
     assert json.loads(target.read_text(encoding="utf-8")) == md
+
+
+def test_save_image_png_writes_pil_loadable_png(tmp_path):
+    target = tmp_path / "out.png"
+    img = np.zeros((4, 6, 3), dtype=np.uint8)
+    save_image_png(target, img)
+    with Image.open(target) as loaded:
+        assert loaded.size == (6, 4)
+        assert loaded.mode == "RGB"
