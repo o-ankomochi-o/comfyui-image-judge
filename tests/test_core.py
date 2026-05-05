@@ -33,3 +33,16 @@ def test_build_metadata_records_input_fields():
     assert md["caption"] == "trg, a cat"
     assert md["trigger_word"] == "trg"
     assert md["timestamp"] == "2026-05-05T12:34:56"
+
+
+def test_build_metadata_initialises_judgment_state():
+    md = build_metadata(
+        stem="20260505_123456_001",
+        dataset_name="my_ds",
+        caption="trg, a cat",
+        trigger_word="trg",
+        timestamp=datetime(2026, 5, 5, 12, 34, 56),
+    )
+    assert md["judgment"] == "pending"
+    assert md["judged_at"] is None
+    assert md["ng_reasons"] == []
