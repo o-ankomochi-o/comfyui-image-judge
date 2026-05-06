@@ -109,6 +109,14 @@ def apply_judgment(
     pending = dataset_root / "pending"
     target = dataset_root / judgment
     target.mkdir(parents=True, exist_ok=True)
+
+    metadata_path = pending / f"{stem}.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["judgment"] = judgment
+    metadata["judged_at"] = judged_at.isoformat()
+    metadata["comment"] = comment
+    save_metadata_file(metadata_path, metadata)
+
     for ext in ("png", "txt", "json"):
         os.replace(pending / f"{stem}.{ext}", target / f"{stem}.{ext}")
 
