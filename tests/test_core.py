@@ -10,6 +10,7 @@ from core import (
     build_metadata,
     build_pnginfo,
     ensure_pending_dir,
+    list_pending,
     make_stem,
     save_batch,
     save_caption_file,
@@ -212,6 +213,26 @@ def test_apply_judgment_routes_ng_verdict_to_ng_dir(tmp_path):
     md = json.loads(ng_json.read_text(encoding="utf-8"))
     assert md["judgment"] == "ng"
     assert md["comment"] == "blurry"
+
+
+def test_list_pending_returns_metadata_sorted_by_stem(tmp_path):
+    images = np.zeros((3, 4, 6, 3), dtype=np.uint8)
+    save_batch(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        images=images,
+        caption="a cat",
+        trigger_word="trg",
+        timestamp=datetime(2026, 5, 5, 12, 34, 56),
+    )
+
+    items = list_pending(tmp_path, "my_ds")
+    assert [item["stem"] for item in items] == [
+        "20260505_123456_001",
+        "20260505_123456_002",
+        "20260505_123456_003",
+    ]
+    assert all(item["judgment"] == "pending" for item in items)
 
 
 def test_save_batch_iterates_indices_starting_at_one(tmp_path):
