@@ -97,6 +97,13 @@ def save_one(
     return stem
 
 
+def list_datasets(base_dir: Path) -> list[str]:
+    judge_root = Path(base_dir) / "judge"
+    if not judge_root.is_dir():
+        return []
+    return sorted(p.name for p in judge_root.iterdir() if p.is_dir())
+
+
 def list_pending(base_dir: Path, dataset_name: str) -> list[dict]:
     pending = Path(base_dir) / "judge" / dataset_name / "pending"
     if not pending.is_dir():
