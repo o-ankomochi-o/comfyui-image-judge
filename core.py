@@ -97,6 +97,16 @@ def save_one(
     return stem
 
 
+def list_pending(base_dir: Path, dataset_name: str) -> list[dict]:
+    pending = Path(base_dir) / "judge" / dataset_name / "pending"
+    if not pending.is_dir():
+        return []
+    return [
+        json.loads(json_path.read_text(encoding="utf-8"))
+        for json_path in sorted(pending.glob("*.json"))
+    ]
+
+
 def apply_judgment(
     base_dir: Path,
     dataset_name: str,
