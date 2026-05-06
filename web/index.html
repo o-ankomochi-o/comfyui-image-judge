@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Image Judge</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    background: #1e1e1e;
+    color: #ddd;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header, footer {
+    padding: 0.5rem 1rem;
+    background: #2a2a2a;
+  }
+  header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  #image-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 1rem;
+  }
+  #image-area img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .row { display: flex; gap: 0.5rem; align-items: center; }
+  .caption {
+    color: #aaa;
+    font-size: 0.9rem;
+    word-break: break-word;
+  }
+  textarea, select, input {
+    background: #1a1a1a;
+    color: #ddd;
+    border: 1px solid #444;
+    padding: 0.3rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+  }
+  textarea { flex: 1; resize: vertical; min-height: 1.6em; }
+  button {
+    background: #444;
+    color: #ddd;
+    border: 1px solid #666;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.ok { background: #2d6e2d; border-color: #4a9a4a; }
+  button.ng { background: #6e2d2d; border-color: #9a4a4a; }
+  button:hover { filter: brightness(1.2); }
+  .hint { color: #888; font-size: 0.85rem; margin-left: auto; }
+</style>
+</head>
+<body>
+<header>
+  <label>Dataset: <select id="dataset-select"></select></label>
+  <span id="counter"></span>
+  <span class="hint">O = OK / N = NG / &larr; &rarr; 前後 / コメント中はキー無効</span>
+</header>
+<main id="image-area">
+  <img id="current-image" alt="">
+</main>
+<footer>
+  <div class="caption" id="caption-display"></div>
+  <div class="row">
+    <span>Comment:</span>
+    <textarea id="comment-input" rows="1" placeholder="コメント (任意)"></textarea>
+  </div>
+  <div class="row">
+    <button class="ok" id="btn-ok">[O] OK</button>
+    <button class="ng" id="btn-ng">[N] NG</button>
+    <button id="btn-prev">&larr; 前へ</button>
+    <button id="btn-next">次へ &rarr;</button>
+  </div>
+</footer>
+<script>
+  const datasetSelect = document.getElementById('dataset-select');
+  const counter = document.getElementById('counter');
+  const img = document.getElementById('current-image');
+  const captionDisplay = document.getElementById('caption-display');
+  const commentInput = document.getElementById('comment-input');
+
+  let pending = [];
+  let index = 0;
+
+  async function loadDatasets() {
+    const res = await fetch('/imagejudge/datasets');
+    const datasets = await res.json();
+    datasetSelect.innerHTML = '';
+    for (const name of datasets) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      datasetSelect.appendChild(opt);
+    }
+    if (datasets.length > 0) {
+      await loadPending();
+    } else {
+      img.removeAttribute('src');
+      captionDisplay.textContent = '(データセットがありません。SaveForJudge で画像を保存してください)';
+      counter.textContent = '';
+    }
+  }
+
+  async function loadPending() {
+    const dataset = datasetSelect.value;
+    const res = await fetch('/imagejudge/pending?dataset=' + encodeURIComponent(dataset));
+    pending = await res.json();
+    index = 0;
+    render();
+  }
+
+  function render() {
+    if (pending.length === 0) {
+      img.removeAttribute('src');
+      captionDisplay.textContent = '(pending なし)';
+      counter.textContent = '';
+      commentInput.value = '';
+      return;
+    }
+    if (index < 0) index = 0;
+    if (index >= pending.length) index = pending.length - 1;
+    const item = pending[index];
+    const dataset = datasetSelect.value;
+    img.src = '/imagejudge/image/' + encodeURIComponent(dataset) + '/' + encodeURIComponent(item.stem) + '.png';
+    captionDisplay.textContent = item.caption || '';
+    commentInput.value = item.comment || '';
+    counter.textContent = (index + 1) + ' / ' + pending.length;
+  }
+
+  async function judge(verdict) {
+    if (pending.length === 0) return;
+    const item = pending[index];
+    const dataset = datasetSelect.value;
+    const res = await fetch('/imagejudge/judge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dataset: dataset,
+        stem: item.stem,
+        judgment: verdict,
+        comment: commentInput.value,
+      }),
+    });
+    if (!res.ok) {
+      alert('判定に失敗しました (status=' + res.status + ')');
+      return;
+    }
+    pending.splice(index, 1);
+    render();
+  }
+
+  document.getElementById('btn-ok').addEventListener('click', () => judge('ok'));
+  document.getElementById('btn-ng').addEventListener('click', () => judge('ng'));
+  document.getElementById('btn-prev').addEventListener('click', () => { index--; render(); });
+  document.getElementById('btn-next').addEventListener('click', () => { index++; render(); });
+  datasetSelect.addEventListener('change', loadPending);
+
+  document.addEventListener('keydown', (e) => {
+    if (document.activeElement === commentInput) return;
+    if (e.key === 'o' || e.key === 'O') { e.preventDefault(); judge('ok'); }
+    else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); judge('ng'); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); index--; render(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); index++; render(); }
+  });
+
+  loadDatasets();
+</script>
+</body>
+</html>
