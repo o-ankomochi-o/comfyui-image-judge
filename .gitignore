@@ -15,8 +15,9 @@ wheels/
 .vscode/
 .idea/
 
-# CLAUDE
+# Local-only assistant artifacts
 CLAUDE.md
+.claude/
 
 # ComfyUI runtime output (judge dataset directory created by SaveForJudge during manual testing)
 /output/
