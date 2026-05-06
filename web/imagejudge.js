@@ -9,7 +9,7 @@ app.registerExtension({
         btn.style.cssText = [
             "position: fixed",
             "right: 12px",
-            "bottom: 12px",
+            "bottom: 70px",
             "z-index: 9999",
             "padding: 8px 14px",
             "background: #2d6e2d",
