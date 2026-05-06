@@ -12,6 +12,7 @@ from core import (
     ensure_pending_dir,
     list_datasets,
     list_pending,
+    list_pending_all,
     make_stem,
     save_batch,
     save_caption_file,
@@ -255,6 +256,31 @@ def test_list_datasets_returns_subdirectories_sorted(tmp_path):
         timestamp=datetime(2026, 5, 5, 12, 34, 56),
     )
     assert list_datasets(tmp_path) == ["alpha_ds", "zebra_ds"]
+
+
+def test_list_pending_all_aggregates_across_datasets_with_dataset_field(tmp_path):
+    images = np.zeros((1, 4, 6, 3), dtype=np.uint8)
+    save_batch(
+        base_dir=tmp_path,
+        dataset_name="alpha",
+        images=images,
+        caption="",
+        trigger_word="",
+        timestamp=datetime(2026, 5, 5, 12, 0, 0),
+    )
+    save_batch(
+        base_dir=tmp_path,
+        dataset_name="beta",
+        images=images,
+        caption="",
+        trigger_word="",
+        timestamp=datetime(2026, 5, 5, 13, 0, 0),
+    )
+
+    items = list_pending_all(tmp_path)
+    datasets = [item["dataset"] for item in items]
+    assert sorted(datasets) == ["alpha", "beta"]
+    assert all("stem" in item for item in items)
 
 
 def test_save_batch_iterates_indices_starting_at_one(tmp_path):
