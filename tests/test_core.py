@@ -60,7 +60,8 @@ def test_build_metadata_initialises_judgment_state():
     )
     assert md["judgment"] == "pending"
     assert md["judged_at"] is None
-    assert md["ng_reasons"] == []
+    assert md["comment"] == ""
+    assert "ng_reasons" not in md
 
 
 def test_ensure_pending_dir_creates_nested_path(tmp_path):
@@ -81,7 +82,7 @@ def test_save_metadata_file_roundtrips_via_json(tmp_path):
         "stem": "x",
         "judgment": "pending",
         "judged_at": None,
-        "ng_reasons": [],
+        "comment": "",
         "caption": "trg, 猫",
     }
     save_metadata_file(target, md)
