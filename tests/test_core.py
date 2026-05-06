@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 
 from core import (
+    apply_judgment,
     build_caption,
     build_metadata,
     build_pnginfo,
@@ -130,6 +131,33 @@ def test_save_one_writes_png_txt_json_trio(tmp_path):
     assert md["caption"] == "trg, a cat"
     assert md["trigger_word"] == "trg"
     assert md["judgment"] == "pending"
+
+
+def test_apply_judgment_moves_trio_from_pending_to_ok(tmp_path):
+    images = np.zeros((1, 4, 6, 3), dtype=np.uint8)
+    [stem] = save_batch(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        images=images,
+        caption="a cat",
+        trigger_word="trg",
+        timestamp=datetime(2026, 5, 5, 12, 34, 56),
+    )
+    pending = tmp_path / "judge" / "my_ds" / "pending"
+    ok = tmp_path / "judge" / "my_ds" / "ok"
+
+    apply_judgment(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        stem=stem,
+        judgment="ok",
+        comment="",
+        judged_at=datetime(2026, 5, 6, 10, 0, 0),
+    )
+
+    for ext in ("png", "txt", "json"):
+        assert (ok / f"{stem}.{ext}").is_file()
+        assert not (pending / f"{stem}.{ext}").exists()
 
 
 def test_save_batch_iterates_indices_starting_at_one(tmp_path):
