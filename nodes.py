@@ -12,8 +12,18 @@ from pathlib import Path
 
 import folder_paths
 import torch
+from aiohttp import web
+from server import PromptServer
 
 from . import core
+
+_WEB_DIR = Path(__file__).parent / "web"
+
+
+def _is_safe_name(name: str) -> bool:
+    if not name or "/" in name or "\\" in name or ".." in name:
+        return False
+    return True
 
 
 class SaveForJudge:
@@ -73,3 +83,65 @@ class SaveForJudge:
                 ]
             }
         }
+
+
+@PromptServer.instance.routes.get("/imagejudge/ui")
+async def _imagejudge_ui(request):
+    html = _WEB_DIR / "index.html"
+    if not html.is_file():
+        return web.Response(text="Image Judge UI not yet bundled.", status=503)
+    return web.FileResponse(html)
+
+
+@PromptServer.instance.routes.get("/imagejudge/datasets")
+async def _imagejudge_datasets(request):
+    base_dir = Path(folder_paths.get_output_directory())
+    return web.json_response(core.list_datasets(base_dir))
+
+
+@PromptServer.instance.routes.get("/imagejudge/pending")
+async def _imagejudge_pending(request):
+    dataset = request.query.get("dataset", "")
+    if not _is_safe_name(dataset):
+        return web.json_response({"error": "invalid dataset"}, status=400)
+    base_dir = Path(folder_paths.get_output_directory())
+    return web.json_response(core.list_pending(base_dir, dataset))
+
+
+@PromptServer.instance.routes.get("/imagejudge/image/{dataset}/{filename}")
+async def _imagejudge_image(request):
+    dataset = request.match_info["dataset"]
+    filename = request.match_info["filename"]
+    if not _is_safe_name(dataset) or not _is_safe_name(filename):
+        return web.Response(status=400)
+    base_dir = Path(folder_paths.get_output_directory())
+    path = base_dir / "judge" / dataset / "pending" / filename
+    if not path.is_file():
+        return web.Response(status=404)
+    return web.FileResponse(path)
+
+
+@PromptServer.instance.routes.post("/imagejudge/judge")
+async def _imagejudge_judge(request):
+    try:
+        payload = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    dataset = payload.get("dataset", "")
+    stem = payload.get("stem", "")
+    judgment = payload.get("judgment", "")
+    comment = payload.get("comment", "")
+    if not _is_safe_name(dataset) or not _is_safe_name(stem):
+        return web.json_response({"error": "invalid name"}, status=400)
+    if judgment not in ("ok", "ng"):
+        return web.json_response({"error": "invalid judgment"}, status=400)
+    base_dir = Path(folder_paths.get_output_directory())
+    core.apply_judgment(
+        base_dir=base_dir,
+        dataset_name=dataset,
+        stem=stem,
+        judgment=judgment,
+        comment=comment,
+        judged_at=datetime.now(),
+    )
+    return web.json_response({"ok": True})
