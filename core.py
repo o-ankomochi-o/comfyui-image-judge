@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -94,6 +95,22 @@ def save_one(
     save_caption_file(pending / f"{stem}.txt", full_caption)
     save_metadata_file(pending / f"{stem}.json", metadata)
     return stem
+
+
+def apply_judgment(
+    base_dir: Path,
+    dataset_name: str,
+    stem: str,
+    judgment: str,
+    comment: str,
+    judged_at: datetime,
+) -> None:
+    dataset_root = Path(base_dir) / "judge" / dataset_name
+    pending = dataset_root / "pending"
+    target = dataset_root / judgment
+    target.mkdir(parents=True, exist_ok=True)
+    for ext in ("png", "txt", "json"):
+        os.replace(pending / f"{stem}.{ext}", target / f"{stem}.{ext}")
 
 
 def save_batch(
