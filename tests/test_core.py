@@ -160,6 +160,33 @@ def test_apply_judgment_moves_trio_from_pending_to_ok(tmp_path):
         assert not (pending / f"{stem}.{ext}").exists()
 
 
+def test_apply_judgment_updates_metadata_in_moved_json(tmp_path):
+    images = np.zeros((1, 4, 6, 3), dtype=np.uint8)
+    [stem] = save_batch(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        images=images,
+        caption="a cat",
+        trigger_word="trg",
+        timestamp=datetime(2026, 5, 5, 12, 34, 56),
+    )
+
+    apply_judgment(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        stem=stem,
+        judgment="ok",
+        comment="looks great",
+        judged_at=datetime(2026, 5, 6, 10, 0, 0),
+    )
+
+    moved = tmp_path / "judge" / "my_ds" / "ok" / f"{stem}.json"
+    md = json.loads(moved.read_text(encoding="utf-8"))
+    assert md["judgment"] == "ok"
+    assert md["judged_at"] == "2026-05-06T10:00:00"
+    assert md["comment"] == "looks great"
+
+
 def test_save_batch_iterates_indices_starting_at_one(tmp_path):
     images = np.zeros((3, 4, 6, 3), dtype=np.uint8)
     stems = save_batch(
