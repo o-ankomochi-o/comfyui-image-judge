@@ -30,7 +30,7 @@ def build_metadata(
         "timestamp": timestamp.isoformat(),
         "judgment": "pending",
         "judged_at": None,
-        "ng_reasons": [],
+        "comment": "",
     }
 
 
