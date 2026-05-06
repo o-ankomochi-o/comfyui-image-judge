@@ -114,6 +114,15 @@ def list_pending(base_dir: Path, dataset_name: str) -> list[dict]:
     ]
 
 
+def list_pending_all(base_dir: Path) -> list[dict]:
+    items = []
+    for dataset_name in list_datasets(base_dir):
+        for item in list_pending(base_dir, dataset_name):
+            item["dataset"] = dataset_name
+            items.append(item)
+    return items
+
+
 def apply_judgment(
     base_dir: Path,
     dataset_name: str,
