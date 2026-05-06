@@ -283,6 +283,33 @@ def test_list_pending_all_aggregates_across_datasets_with_dataset_field(tmp_path
     assert all("stem" in item for item in items)
 
 
+def test_apply_judgment_routes_to_target_dataset_when_specified(tmp_path):
+    images = np.zeros((1, 4, 6, 3), dtype=np.uint8)
+    [stem] = save_batch(
+        base_dir=tmp_path,
+        dataset_name="alpha",
+        images=images,
+        caption="",
+        trigger_word="",
+        timestamp=datetime(2026, 5, 5, 12, 0, 0),
+    )
+
+    apply_judgment(
+        base_dir=tmp_path,
+        dataset_name="alpha",
+        stem=stem,
+        judgment="ok",
+        comment="",
+        judged_at=datetime(2026, 5, 6, 10, 0, 0),
+        target_dataset="aggregated_final",
+    )
+
+    target_json = tmp_path / "judge" / "aggregated_final" / "ok" / f"{stem}.json"
+    assert target_json.is_file()
+    md = json.loads(target_json.read_text(encoding="utf-8"))
+    assert md["dataset"] == "aggregated_final"
+
+
 def test_save_batch_iterates_indices_starting_at_one(tmp_path):
     images = np.zeros((3, 4, 6, 3), dtype=np.uint8)
     stems = save_batch(
