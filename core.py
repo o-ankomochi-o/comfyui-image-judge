@@ -32,6 +32,7 @@ def build_metadata(
         "judgment": "pending",
         "judged_at": None,
         "comment": "",
+        "ng_reason": "",
     }
 
 
