@@ -78,12 +78,33 @@
     text-align: left;
   }
   button.ok { background: #2d6e2d; border-color: #4a9a4a; min-width: 4rem; text-align: center; }
-  button.ng { background: #6e2d2d; border-color: #9a4a4a; }
+  button.ng {
+    background: #6e2d2d;
+    border-color: #9a4a4a;
+    padding: 0.3rem 0.6rem;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.1rem;
+  }
+  button.ng .ng-header {
+    background: #c33;
+    color: #fff;
+    font-weight: bold;
+    font-size: 0.75rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+    align-self: flex-start;
+    letter-spacing: 0.04em;
+  }
+  button.ng .ng-cat {
+    font-weight: bold;
+    margin-top: 0.1rem;
+  }
   button.ng small {
     display: block;
     font-size: 0.7rem;
     color: #f3c4c4;
-    margin-top: 0.15rem;
     font-weight: normal;
   }
   button:hover { filter: brightness(1.2); }
@@ -113,7 +134,7 @@
     <datalist id="datasets-list"></datalist>
   </span>
   <span id="counter"></span>
-  <span class="hint">O = OK / 1-6 = NG (理由) / &larr; &rarr; 前後 / コメント中はキー無効</span>
+  <span class="hint">O = OK / 1-7 = NG (理由) / &larr; &rarr; 前後 / コメント中はキー無効</span>
 </header>
 <main id="image-area">
   <img id="current-image" alt="">
@@ -127,22 +148,39 @@
   <div class="row judge-buttons">
     <button class="ok" id="btn-ok">[O] OK</button>
     <button class="ng" data-reason="キャラ違い">
-      [1] キャラ違い<small>顔・髪・体・服が指定と違う</small>
+      <span class="ng-header">&#10006; NG [1]</span>
+      <span class="ng-cat">キャラ違い</span>
+      <small>顔・髪・体・服が指定と違う</small>
     </button>
     <button class="ng" data-reason="技術破綻">
-      [2] 技術破綻<small>解剖学的崩れ、AIノイズ、画質</small>
+      <span class="ng-header">&#10006; NG [2]</span>
+      <span class="ng-cat">技術破綻</span>
+      <small>解剖学的崩れ、AIノイズ、画質</small>
     </button>
     <button class="ng" data-reason="ポーズ/構図不適">
-      [3] ポーズ/構図不適<small>求めた絵じゃない、構図破綻</small>
+      <span class="ng-header">&#10006; NG [3]</span>
+      <span class="ng-cat">ポーズ/構図不適</span>
+      <small>求めた絵じゃない、構図破綻</small>
     </button>
     <button class="ng" data-reason="演出不適">
-      [4] 演出不適<small>ライティング・色調・雰囲気</small>
+      <span class="ng-header">&#10006; NG [4]</span>
+      <span class="ng-cat">演出不適</span>
+      <small>ライティング・色調・雰囲気</small>
     </button>
     <button class="ng" data-reason="衣装/小物不適">
-      [5] 衣装/小物不適<small>服装・装飾・持ち物が違う</small>
+      <span class="ng-header">&#10006; NG [5]</span>
+      <span class="ng-cat">衣装/小物不適</span>
+      <small>服装・装飾・持ち物が違う</small>
     </button>
     <button class="ng" data-reason="その他">
-      [6] その他<small>上記に当てはまらない</small>
+      <span class="ng-header">&#10006; NG [6]</span>
+      <span class="ng-cat">その他</span>
+      <small>上記に当てはまらない</small>
+    </button>
+    <button class="ng" data-reason="問題外">
+      <span class="ng-header">&#10006; NG [7]</span>
+      <span class="ng-cat">問題外</span>
+      <small>複数の問題が同時に該当・基準以下</small>
     </button>
   </div>
   <div class="row">
@@ -158,6 +196,7 @@
     '4': '演出不適',
     '5': '衣装/小物不適',
     '6': 'その他',
+    '7': '問題外',
   };
 
   const datasetSelect = document.getElementById('dataset-select');
