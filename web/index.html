@@ -47,6 +47,11 @@
     font-size: 0.9rem;
     word-break: break-word;
   }
+  .source-dataset {
+    color: #6cf;
+    font-size: 0.8rem;
+    margin-right: 0.4rem;
+  }
   textarea, select, input {
     background: #1a1a1a;
     color: #ddd;
@@ -68,11 +73,24 @@
   button.ng { background: #6e2d2d; border-color: #9a4a4a; }
   button:hover { filter: brightness(1.2); }
   .hint { color: #888; font-size: 0.85rem; margin-left: auto; }
+  .mode-group { display: flex; gap: 0.4rem; align-items: center; }
+  .mode-group label { cursor: pointer; }
 </style>
 </head>
 <body>
 <header>
-  <label>Dataset: <select id="dataset-select"></select></label>
+  <div class="mode-group">
+    <label><input type="radio" name="mode" value="single" checked> Single</label>
+    <label><input type="radio" name="mode" value="all"> All (集約)</label>
+  </div>
+  <span id="single-controls">
+    Dataset: <select id="dataset-select"></select>
+  </span>
+  <span id="all-controls" style="display:none">
+    集約先:
+    <input type="text" id="target-dataset-input" list="datasets-list" placeholder="例: character_a_final" size="22">
+    <datalist id="datasets-list"></datalist>
+  </span>
   <span id="counter"></span>
   <span class="hint">O = OK / N = NG / &larr; &rarr; 前後 / コメント中はキー無効</span>
 </header>
@@ -94,39 +112,64 @@
 </footer>
 <script>
   const datasetSelect = document.getElementById('dataset-select');
+  const datasetsList = document.getElementById('datasets-list');
+  const targetInput = document.getElementById('target-dataset-input');
   const counter = document.getElementById('counter');
   const img = document.getElementById('current-image');
   const captionDisplay = document.getElementById('caption-display');
   const commentInput = document.getElementById('comment-input');
+  const singleControls = document.getElementById('single-controls');
+  const allControls = document.getElementById('all-controls');
 
   let pending = [];
   let index = 0;
+  let mode = 'single';
+
+  document.querySelectorAll('input[name="mode"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      mode = radio.value;
+      singleControls.style.display = mode === 'single' ? '' : 'none';
+      allControls.style.display = mode === 'all' ? '' : 'none';
+      loadPending();
+    });
+  });
 
   async function loadDatasets() {
     const res = await fetch('/imagejudge/datasets');
     const datasets = await res.json();
     datasetSelect.innerHTML = '';
+    datasetsList.innerHTML = '';
     for (const name of datasets) {
       const opt = document.createElement('option');
       opt.value = name;
       opt.textContent = name;
       datasetSelect.appendChild(opt);
+
+      const dlOpt = document.createElement('option');
+      dlOpt.value = name;
+      datasetsList.appendChild(dlOpt);
     }
-    if (datasets.length > 0) {
-      await loadPending();
-    } else {
-      img.removeAttribute('src');
-      captionDisplay.textContent = '(データセットがありません。SaveForJudge で画像を保存してください)';
-      counter.textContent = '';
-    }
+    await loadPending();
   }
 
   async function loadPending() {
-    const dataset = datasetSelect.value;
-    const res = await fetch('/imagejudge/pending?dataset=' + encodeURIComponent(dataset));
-    pending = await res.json();
+    if (mode === 'all') {
+      const res = await fetch('/imagejudge/pending-all');
+      pending = await res.json();
+    } else {
+      if (!datasetSelect.value) {
+        pending = [];
+      } else {
+        const res = await fetch('/imagejudge/pending?dataset=' + encodeURIComponent(datasetSelect.value));
+        pending = await res.json();
+      }
+    }
     index = 0;
     render();
+  }
+
+  function currentItemDataset(item) {
+    return mode === 'all' ? item.dataset : datasetSelect.value;
   }
 
   function render() {
@@ -140,9 +183,18 @@
     if (index < 0) index = 0;
     if (index >= pending.length) index = pending.length - 1;
     const item = pending[index];
-    const dataset = datasetSelect.value;
-    img.src = '/imagejudge/image/' + encodeURIComponent(dataset) + '/' + encodeURIComponent(item.stem) + '.png';
-    captionDisplay.textContent = item.caption || '';
+    const itemDataset = currentItemDataset(item);
+    img.src = '/imagejudge/image/' + encodeURIComponent(itemDataset) + '/' + encodeURIComponent(item.stem) + '.png';
+    if (mode === 'all') {
+      captionDisplay.innerHTML = '';
+      const tag = document.createElement('span');
+      tag.className = 'source-dataset';
+      tag.textContent = '[' + item.dataset + ']';
+      captionDisplay.appendChild(tag);
+      captionDisplay.appendChild(document.createTextNode(item.caption || ''));
+    } else {
+      captionDisplay.textContent = item.caption || '';
+    }
     commentInput.value = item.comment || '';
     counter.textContent = (index + 1) + ' / ' + pending.length;
   }
@@ -150,16 +202,25 @@
   async function judge(verdict) {
     if (pending.length === 0) return;
     const item = pending[index];
-    const dataset = datasetSelect.value;
+    const itemDataset = currentItemDataset(item);
+    const body = {
+      dataset: itemDataset,
+      stem: item.stem,
+      judgment: verdict,
+      comment: commentInput.value,
+    };
+    if (mode === 'all') {
+      const target = targetInput.value.trim();
+      if (!target) {
+        alert('集約先 dataset 名を入力してください');
+        return;
+      }
+      body.target_dataset = target;
+    }
     const res = await fetch('/imagejudge/judge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        dataset: dataset,
-        stem: item.stem,
-        judgment: verdict,
-        comment: commentInput.value,
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       alert('判定に失敗しました (status=' + res.status + ')');
@@ -176,7 +237,7 @@
   datasetSelect.addEventListener('change', loadPending);
 
   document.addEventListener('keydown', (e) => {
-    if (document.activeElement === commentInput) return;
+    if (document.activeElement === commentInput || document.activeElement === targetInput) return;
     if (e.key === 'o' || e.key === 'O') { e.preventDefault(); judge('ok'); }
     else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); judge('ng'); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); index--; render(); }
