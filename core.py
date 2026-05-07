@@ -104,14 +104,18 @@ def list_datasets(base_dir: Path) -> list[str]:
     return sorted(p.name for p in judge_root.iterdir() if p.is_dir())
 
 
-def list_pending(base_dir: Path, dataset_name: str) -> list[dict]:
-    pending = Path(base_dir) / "judge" / dataset_name / "pending"
-    if not pending.is_dir():
+def list_by_status(base_dir: Path, dataset_name: str, status: str) -> list[dict]:
+    folder = Path(base_dir) / "judge" / dataset_name / status
+    if not folder.is_dir():
         return []
     return [
         json.loads(json_path.read_text(encoding="utf-8"))
-        for json_path in sorted(pending.glob("*.json"))
+        for json_path in sorted(folder.glob("*.json"))
     ]
+
+
+def list_pending(base_dir: Path, dataset_name: str) -> list[dict]:
+    return list_by_status(base_dir, dataset_name, "pending")
 
 
 def list_pending_all(base_dir: Path) -> list[dict]:
