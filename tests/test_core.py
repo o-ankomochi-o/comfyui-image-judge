@@ -336,6 +336,44 @@ def test_list_by_status_returns_metadata_from_ok_dir(tmp_path):
     assert items[0]["judgment"] == "ok"
 
 
+def test_apply_judgment_can_re_judge_from_ok_to_ng(tmp_path):
+    images = np.zeros((1, 4, 6, 3), dtype=np.uint8)
+    [stem] = save_batch(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        images=images,
+        caption="cat",
+        trigger_word="",
+        timestamp=datetime(2026, 5, 5, 12, 0, 0),
+    )
+    apply_judgment(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        stem=stem,
+        judgment="ok",
+        comment="",
+        judged_at=datetime(2026, 5, 6, 10, 0, 0),
+    )
+
+    apply_judgment(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        stem=stem,
+        judgment="ng",
+        comment="actually bad",
+        judged_at=datetime(2026, 5, 7, 10, 0, 0),
+        from_status="ok",
+    )
+
+    ok_path = tmp_path / "judge" / "my_ds" / "ok" / f"{stem}.json"
+    assert not ok_path.exists()
+    ng_path = tmp_path / "judge" / "my_ds" / "ng" / f"{stem}.json"
+    assert ng_path.is_file()
+    md = json.loads(ng_path.read_text(encoding="utf-8"))
+    assert md["judgment"] == "ng"
+    assert md["comment"] == "actually bad"
+
+
 def test_save_batch_iterates_indices_starting_at_one(tmp_path):
     images = np.zeros((3, 4, 6, 3), dtype=np.uint8)
     stems = save_batch(
