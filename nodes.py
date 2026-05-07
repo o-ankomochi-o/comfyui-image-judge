@@ -19,6 +19,15 @@ from . import core
 
 _WEB_DIR = Path(__file__).parent / "web"
 
+NG_REASONS = (
+    "キャラ違い",
+    "技術破綻",
+    "ポーズ/構図不適",
+    "演出不適",
+    "衣装/小物不適",
+    "その他",
+)
+
 
 def _is_safe_name(name: str) -> bool:
     if not name or "/" in name or "\\" in name or ".." in name:
@@ -154,6 +163,7 @@ async def _imagejudge_judge(request):
     comment = payload.get("comment", "")
     target_dataset = payload.get("target_dataset") or None
     from_status = payload.get("from_status", "pending")
+    ng_reason = payload.get("ng_reason", "")
     if not _is_safe_name(dataset) or not _is_safe_name(stem):
         return web.json_response({"error": "invalid name"}, status=400)
     if target_dataset is not None and not _is_safe_name(target_dataset):
@@ -162,6 +172,8 @@ async def _imagejudge_judge(request):
         return web.json_response({"error": "invalid judgment"}, status=400)
     if from_status not in ("pending", "ok", "ng"):
         return web.json_response({"error": "invalid from_status"}, status=400)
+    if judgment == "ng" and ng_reason not in NG_REASONS:
+        return web.json_response({"error": "invalid ng_reason"}, status=400)
     base_dir = Path(folder_paths.get_output_directory())
     core.apply_judgment(
         base_dir=base_dir,
@@ -172,5 +184,6 @@ async def _imagejudge_judge(request):
         judged_at=datetime.now(),
         target_dataset=target_dataset,
         from_status=from_status,
+        ng_reason=ng_reason,
     )
     return web.json_response({"ok": True})
