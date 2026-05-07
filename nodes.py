@@ -114,14 +114,29 @@ async def _imagejudge_pending_all(request):
     return web.json_response(core.list_pending_all(base_dir))
 
 
-@PromptServer.instance.routes.get("/imagejudge/image/{dataset}/{filename}")
+@PromptServer.instance.routes.get("/imagejudge/list")
+async def _imagejudge_list(request):
+    dataset = request.query.get("dataset", "")
+    status = request.query.get("status", "pending")
+    if not _is_safe_name(dataset):
+        return web.json_response({"error": "invalid dataset"}, status=400)
+    if status not in ("pending", "ok", "ng"):
+        return web.json_response({"error": "invalid status"}, status=400)
+    base_dir = Path(folder_paths.get_output_directory())
+    return web.json_response(core.list_by_status(base_dir, dataset, status))
+
+
+@PromptServer.instance.routes.get("/imagejudge/image/{dataset}/{status}/{filename}")
 async def _imagejudge_image(request):
     dataset = request.match_info["dataset"]
+    status = request.match_info["status"]
     filename = request.match_info["filename"]
     if not _is_safe_name(dataset) or not _is_safe_name(filename):
         return web.Response(status=400)
+    if status not in ("pending", "ok", "ng"):
+        return web.Response(status=400)
     base_dir = Path(folder_paths.get_output_directory())
-    path = base_dir / "judge" / dataset / "pending" / filename
+    path = base_dir / "judge" / dataset / status / filename
     if not path.is_file():
         return web.Response(status=404)
     return web.FileResponse(path)
@@ -138,12 +153,15 @@ async def _imagejudge_judge(request):
     judgment = payload.get("judgment", "")
     comment = payload.get("comment", "")
     target_dataset = payload.get("target_dataset") or None
+    from_status = payload.get("from_status", "pending")
     if not _is_safe_name(dataset) or not _is_safe_name(stem):
         return web.json_response({"error": "invalid name"}, status=400)
     if target_dataset is not None and not _is_safe_name(target_dataset):
         return web.json_response({"error": "invalid target_dataset"}, status=400)
     if judgment not in ("ok", "ng"):
         return web.json_response({"error": "invalid judgment"}, status=400)
+    if from_status not in ("pending", "ok", "ng"):
+        return web.json_response({"error": "invalid from_status"}, status=400)
     base_dir = Path(folder_paths.get_output_directory())
     core.apply_judgment(
         base_dir=base_dir,
@@ -153,5 +171,6 @@ async def _imagejudge_judge(request):
         comment=comment,
         judged_at=datetime.now(),
         target_dataset=target_dataset,
+        from_status=from_status,
     )
     return web.json_response({"ok": True})
