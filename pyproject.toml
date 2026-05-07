@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-image-judge"
-version = "0.0.1"
+version = "0.1.0"
 description = "ComfyUI custom nodes for human OK/NG judging of generated images, oriented toward LoRA dataset curation."
 readme = "README.md"
 license = { text = "MIT" }
