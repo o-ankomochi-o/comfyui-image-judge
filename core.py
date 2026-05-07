@@ -130,10 +130,11 @@ def apply_judgment(
     judgment: str,
     comment: str,
     judged_at: datetime,
+    target_dataset: str | None = None,
 ) -> None:
-    dataset_root = Path(base_dir) / "judge" / dataset_name
-    pending = dataset_root / "pending"
-    target = dataset_root / judgment
+    pending = Path(base_dir) / "judge" / dataset_name / "pending"
+    final_dataset = target_dataset or dataset_name
+    target = Path(base_dir) / "judge" / final_dataset / judgment
     target.mkdir(parents=True, exist_ok=True)
 
     metadata_path = pending / f"{stem}.json"
@@ -141,6 +142,7 @@ def apply_judgment(
     metadata["judgment"] = judgment
     metadata["judged_at"] = judged_at.isoformat()
     metadata["comment"] = comment
+    metadata["dataset"] = final_dataset
     save_metadata_file(metadata_path, metadata)
 
     for ext in ("png", "txt", "json"):
