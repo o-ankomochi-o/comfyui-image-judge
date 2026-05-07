@@ -66,6 +66,7 @@ def test_build_metadata_initialises_judgment_state():
     assert md["judgment"] == "pending"
     assert md["judged_at"] is None
     assert md["comment"] == ""
+    assert md["ng_reason"] == ""
     assert "ng_reasons" not in md
 
 
