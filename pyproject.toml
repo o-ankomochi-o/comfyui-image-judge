@@ -46,8 +46,7 @@ pythonpath = ["."]
 testpaths = ["tests"]
 
 # ComfyUI Registry publication metadata.
-# Fill PublisherId after registering at https://registry.comfy.org/ (Step 10 of the roadmap).
 [tool.comfy]
-PublisherId = ""
+PublisherId = "ankomochi"
 DisplayName = "Image Judge"
 Icon = ""
