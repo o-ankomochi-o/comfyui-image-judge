@@ -137,6 +137,7 @@ def apply_judgment(
     judged_at: datetime,
     target_dataset: str | None = None,
     from_status: str = "pending",
+    ng_reason: str = "",
 ) -> None:
     source = Path(base_dir) / "judge" / dataset_name / from_status
     final_dataset = target_dataset or dataset_name
@@ -149,6 +150,7 @@ def apply_judgment(
     metadata["judged_at"] = judged_at.isoformat()
     metadata["comment"] = comment
     metadata["dataset"] = final_dataset
+    metadata["ng_reason"] = ng_reason if judgment == "ng" else ""
     save_metadata_file(metadata_path, metadata)
 
     for ext in ("png", "txt", "json"):
