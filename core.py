@@ -135,13 +135,14 @@ def apply_judgment(
     comment: str,
     judged_at: datetime,
     target_dataset: str | None = None,
+    from_status: str = "pending",
 ) -> None:
-    pending = Path(base_dir) / "judge" / dataset_name / "pending"
+    source = Path(base_dir) / "judge" / dataset_name / from_status
     final_dataset = target_dataset or dataset_name
     target = Path(base_dir) / "judge" / final_dataset / judgment
     target.mkdir(parents=True, exist_ok=True)
 
-    metadata_path = pending / f"{stem}.json"
+    metadata_path = source / f"{stem}.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     metadata["judgment"] = judgment
     metadata["judged_at"] = judged_at.isoformat()
@@ -150,7 +151,7 @@ def apply_judgment(
     save_metadata_file(metadata_path, metadata)
 
     for ext in ("png", "txt", "json"):
-        os.replace(pending / f"{stem}.{ext}", target / f"{stem}.{ext}")
+        os.replace(source / f"{stem}.{ext}", target / f"{stem}.{ext}")
 
 
 def save_batch(
