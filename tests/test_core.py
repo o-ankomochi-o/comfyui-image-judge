@@ -10,6 +10,7 @@ from core import (
     build_metadata,
     build_pnginfo,
     ensure_pending_dir,
+    list_by_status,
     list_datasets,
     list_pending,
     list_pending_all,
@@ -308,6 +309,31 @@ def test_apply_judgment_routes_to_target_dataset_when_specified(tmp_path):
     assert target_json.is_file()
     md = json.loads(target_json.read_text(encoding="utf-8"))
     assert md["dataset"] == "aggregated_final"
+
+
+def test_list_by_status_returns_metadata_from_ok_dir(tmp_path):
+    images = np.zeros((1, 4, 6, 3), dtype=np.uint8)
+    [stem] = save_batch(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        images=images,
+        caption="cat",
+        trigger_word="",
+        timestamp=datetime(2026, 5, 5, 12, 0, 0),
+    )
+    apply_judgment(
+        base_dir=tmp_path,
+        dataset_name="my_ds",
+        stem=stem,
+        judgment="ok",
+        comment="great",
+        judged_at=datetime(2026, 5, 6, 10, 0, 0),
+    )
+
+    items = list_by_status(tmp_path, "my_ds", "ok")
+    assert len(items) == 1
+    assert items[0]["stem"] == stem
+    assert items[0]["judgment"] == "ok"
 
 
 def test_save_batch_iterates_indices_starting_at_one(tmp_path):
