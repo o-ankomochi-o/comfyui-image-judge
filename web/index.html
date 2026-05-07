@@ -42,6 +42,7 @@
     gap: 0.5rem;
   }
   .row { display: flex; gap: 0.5rem; align-items: center; }
+  .row.judge-buttons { flex-wrap: wrap; }
   .caption {
     color: #aaa;
     font-size: 0.9rem;
@@ -51,6 +52,11 @@
     color: #6cf;
     font-size: 0.8rem;
     margin-right: 0.4rem;
+  }
+  .current-ng-reason {
+    color: #f99;
+    font-size: 0.8rem;
+    margin-left: 0.4rem;
   }
   textarea, select, input {
     background: #1a1a1a;
@@ -68,9 +74,18 @@
     padding: 0.4rem 0.8rem;
     cursor: pointer;
     font-family: inherit;
+    line-height: 1.2;
+    text-align: left;
   }
-  button.ok { background: #2d6e2d; border-color: #4a9a4a; }
+  button.ok { background: #2d6e2d; border-color: #4a9a4a; min-width: 4rem; text-align: center; }
   button.ng { background: #6e2d2d; border-color: #9a4a4a; }
+  button.ng small {
+    display: block;
+    font-size: 0.7rem;
+    color: #f3c4c4;
+    margin-top: 0.15rem;
+    font-weight: normal;
+  }
   button:hover { filter: brightness(1.2); }
   .hint { color: #888; font-size: 0.85rem; margin-left: auto; }
   .mode-group, .status-group { display: flex; gap: 0.4rem; align-items: center; }
@@ -98,7 +113,7 @@
     <datalist id="datasets-list"></datalist>
   </span>
   <span id="counter"></span>
-  <span class="hint">O = OK / N = NG / &larr; &rarr; 前後 / コメント中はキー無効</span>
+  <span class="hint">O = OK / 1-6 = NG (理由) / &larr; &rarr; 前後 / コメント中はキー無効</span>
 </header>
 <main id="image-area">
   <img id="current-image" alt="">
@@ -109,14 +124,42 @@
     <span>Comment:</span>
     <textarea id="comment-input" rows="1" placeholder="コメント (任意)"></textarea>
   </div>
-  <div class="row">
+  <div class="row judge-buttons">
     <button class="ok" id="btn-ok">[O] OK</button>
-    <button class="ng" id="btn-ng">[N] NG</button>
+    <button class="ng" data-reason="キャラ違い">
+      [1] キャラ違い<small>顔・髪・体・服が指定と違う</small>
+    </button>
+    <button class="ng" data-reason="技術破綻">
+      [2] 技術破綻<small>解剖学的崩れ、AIノイズ、画質</small>
+    </button>
+    <button class="ng" data-reason="ポーズ/構図不適">
+      [3] ポーズ/構図不適<small>求めた絵じゃない、構図破綻</small>
+    </button>
+    <button class="ng" data-reason="演出不適">
+      [4] 演出不適<small>ライティング・色調・雰囲気</small>
+    </button>
+    <button class="ng" data-reason="衣装/小物不適">
+      [5] 衣装/小物不適<small>服装・装飾・持ち物が違う</small>
+    </button>
+    <button class="ng" data-reason="その他">
+      [6] その他<small>上記に当てはまらない</small>
+    </button>
+  </div>
+  <div class="row">
     <button id="btn-prev">&larr; 前へ</button>
     <button id="btn-next">次へ &rarr;</button>
   </div>
 </footer>
 <script>
+  const NG_REASONS_BY_KEY = {
+    '1': 'キャラ違い',
+    '2': '技術破綻',
+    '3': 'ポーズ/構図不適',
+    '4': '演出不適',
+    '5': '衣装/小物不適',
+    '6': 'その他',
+  };
+
   const datasetSelect = document.getElementById('dataset-select');
   const datasetsList = document.getElementById('datasets-list');
   const targetInput = document.getElementById('target-dataset-input');
@@ -205,29 +248,35 @@
     const itemDataset = currentItemDataset(item);
     const itemStatus = currentItemStatus();
     img.src = '/imagejudge/image/' + encodeURIComponent(itemDataset) + '/' + encodeURIComponent(itemStatus) + '/' + encodeURIComponent(item.stem) + '.png';
+    captionDisplay.innerHTML = '';
     if (mode === 'all') {
-      captionDisplay.innerHTML = '';
       const tag = document.createElement('span');
       tag.className = 'source-dataset';
       tag.textContent = '[' + item.dataset + ']';
       captionDisplay.appendChild(tag);
-      captionDisplay.appendChild(document.createTextNode(item.caption || ''));
-    } else {
-      captionDisplay.textContent = item.caption || '';
+    }
+    captionDisplay.appendChild(document.createTextNode(item.caption || ''));
+    if (item.judgment === 'ng' && item.ng_reason) {
+      const reasonTag = document.createElement('span');
+      reasonTag.className = 'current-ng-reason';
+      reasonTag.textContent = '[NG: ' + item.ng_reason + ']';
+      captionDisplay.appendChild(reasonTag);
     }
     commentInput.value = item.comment || '';
     counter.textContent = (index + 1) + ' / ' + pending.length;
   }
 
-  async function judge(verdict) {
+  async function judge(verdict, ngReason) {
     if (pending.length === 0) return;
     const item = pending[index];
     const itemDataset = currentItemDataset(item);
     const fromStatus = currentItemStatus();
-    if (fromStatus === verdict && mode === 'single') {
-      // 同じステータスへの遷移は no-op
-      return;
+
+    if (mode === 'single' && fromStatus === verdict) {
+      if (verdict === 'ok') return;
+      if (verdict === 'ng' && (item.ng_reason || '') === (ngReason || '')) return;
     }
+
     const body = {
       dataset: itemDataset,
       stem: item.stem,
@@ -235,6 +284,13 @@
       comment: commentInput.value,
       from_status: fromStatus,
     };
+    if (verdict === 'ng') {
+      if (!ngReason) {
+        alert('NG 理由を選択してください');
+        return;
+      }
+      body.ng_reason = ngReason;
+    }
     if (mode === 'all') {
       const target = targetInput.value.trim();
       if (!target) {
@@ -257,7 +313,9 @@
   }
 
   document.getElementById('btn-ok').addEventListener('click', () => judge('ok'));
-  document.getElementById('btn-ng').addEventListener('click', () => judge('ng'));
+  document.querySelectorAll('button.ng[data-reason]').forEach((btn) => {
+    btn.addEventListener('click', () => judge('ng', btn.dataset.reason));
+  });
   document.getElementById('btn-prev').addEventListener('click', () => { index--; render(); });
   document.getElementById('btn-next').addEventListener('click', () => { index++; render(); });
   datasetSelect.addEventListener('change', loadPending);
@@ -265,7 +323,7 @@
   document.addEventListener('keydown', (e) => {
     if (document.activeElement === commentInput || document.activeElement === targetInput) return;
     if (e.key === 'o' || e.key === 'O') { e.preventDefault(); judge('ok'); }
-    else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); judge('ng'); }
+    else if (NG_REASONS_BY_KEY[e.key]) { e.preventDefault(); judge('ng', NG_REASONS_BY_KEY[e.key]); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); index--; render(); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); index++; render(); }
   });
